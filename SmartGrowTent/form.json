@@ -1,0 +1,329 @@
+{
+  "elements": [
+    {
+      "type": "ExpansionPanel",
+      "caption": "Gemini KI Konfiguration",
+      "expanded": true,
+      "items": [
+        {
+          "type": "PasswordTextBox",
+          "name": "GeminiAPIKey",
+          "caption": "API Key"
+        },
+        {
+          "type": "Select",
+          "name": "GeminiModel",
+          "caption": "Modell",
+          "options": [
+            { "label": "gemini-2.0-flash", "value": "gemini-2.0-flash" },
+            { "label": "gemini-2.5-flash", "value": "gemini-2.5-flash" },
+            { "label": "gemini-1.5-flash", "value": "gemini-1.5-flash" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "Pumpen (HmIP-RGBW)",
+      "items": [
+        {
+          "type": "SelectInstance",
+          "name": "PumpWaterID",
+          "caption": "Wasserpumpe (Kanal R)"
+        },
+        {
+          "type": "SelectInstance",
+          "name": "PumpNutrientID",
+          "caption": "Düngerpumpe (Kanal G)"
+        },
+        {
+          "type": "SelectInstance",
+          "name": "PumpPHDownID",
+          "caption": "pH-Down Pumpe (Kanal B) – optional"
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "Geräte (HmIP-PSM)",
+      "items": [
+        {
+          "type": "SelectVariable",
+          "name": "LightSwitchID",
+          "caption": "Grow-Licht STATE"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "LightPowerID",
+          "caption": "Grow-Licht POWER"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "FanSwitchID",
+          "caption": "Abluft STATE"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "FanPowerID",
+          "caption": "Abluft POWER"
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "FYTA Sensoren",
+      "items": [
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "ValidationTextBox",
+              "name": "Plant1Name",
+              "caption": "Pflanze 1 Name"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "Plant1MoistureID",
+              "caption": "Pflanze 1 Feuchtigkeit"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "Plant1ECID",
+              "caption": "Pflanze 1 EC"
+            }
+          ]
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "ValidationTextBox",
+              "name": "Plant2Name",
+              "caption": "Pflanze 2 Name"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "Plant2MoistureID",
+              "caption": "Pflanze 2 Feuchtigkeit"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "Plant2ECID",
+              "caption": "Pflanze 2 EC"
+            }
+          ]
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "ValidationTextBox",
+              "name": "Plant3Name",
+              "caption": "Pflanze 3 Name"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "Plant3MoistureID",
+              "caption": "Pflanze 3 Feuchtigkeit"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "Plant3ECID",
+              "caption": "Pflanze 3 EC"
+            }
+          ]
+        },
+        {
+          "type": "SelectVariable",
+          "name": "SphereTempID",
+          "caption": "Sphere Temperatur"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "SphereHumidityID",
+          "caption": "Sphere Luftfeuchtigkeit"
+        },
+        {
+          "type": "SelectVariable",
+          "name": "SphereLightID",
+          "caption": "Sphere Licht (PPFD)"
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "Sicherheit",
+      "items": [
+        {
+          "type": "SelectVariable",
+          "name": "LeakSensorID",
+          "caption": "Wassermelder (optional)"
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "MaxWaterSec",
+          "caption": "Max. Wasser-Laufzeit (Sek)",
+          "minimum": 10,
+          "maximum": 3600
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "MaxNutrientSec",
+          "caption": "Max. Dünger-Laufzeit (Sek)",
+          "minimum": 5,
+          "maximum": 300
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "MaxNutrientDailyML",
+          "caption": "Max. Dünger pro Tag (ml)",
+          "minimum": 5,
+          "maximum": 200,
+          "suffix": " ml"
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "MinWaterWaitMin",
+          "caption": "Min. Wartezeit Wasser (Min)",
+          "minimum": 10,
+          "maximum": 360
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "MinNutrientWaitMin",
+          "caption": "Min. Wartezeit Dünger (Min)",
+          "minimum": 10,
+          "maximum": 180
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "Kalibrierung",
+      "items": [
+        {
+          "type": "NumberSpinner",
+          "name": "PumpWaterMLPerSec",
+          "caption": "Wasserpumpe ml/Sek",
+          "digits": 2,
+          "minimum": 0.1,
+          "maximum": 5.0
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "PumpNutrientMLPerSec",
+          "caption": "Düngerpumpe ml/Sek",
+          "digits": 2,
+          "minimum": 0.1,
+          "maximum": 5.0
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "Pflanzenkonfiguration",
+      "items": [
+        {
+          "type": "Select",
+          "name": "GrowthPhase",
+          "caption": "Wachstumsphase",
+          "options": [
+            {
+              "label": "Sämling (Woche 1-2)",
+              "value": "seedling"
+            },
+            {
+              "label": "Vegetativ (Woche 3-6)",
+              "value": "vegetative"
+            },
+            {
+              "label": "Blüte (Woche 7-9)",
+              "value": "flowering"
+            },
+            {
+              "label": "Spätblüte (Woche 10-12)",
+              "value": "late_flowering"
+            },
+            {
+              "label": "Flush (letzte 1-2 Wochen)",
+              "value": "flush"
+            }
+          ]
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "WeekNumber",
+          "caption": "Aktuelle Woche",
+          "minimum": 1,
+          "maximum": 20
+        },
+        {
+          "type": "CheckBox",
+          "name": "FlushPhase",
+          "caption": "Flush-Phase aktiv (NUR Wasser, KEIN Dünger!)"
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "AutomationInterval",
+          "caption": "Prüfintervall (Minuten)",
+          "minimum": 5,
+          "maximum": 120
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Button",
+      "caption": "Automation jetzt ausführen",
+      "onClick": "SGT_RunAutomation($id);"
+    },
+    {
+      "type": "Button",
+      "caption": "NOTFALL-STOPP 🚨",
+      "onClick": "SGT_EmergencyStop($id);"
+    },
+    {
+      "type": "Button",
+      "caption": "Kalibrierung Wasserpumpe (10 Sek)",
+      "onClick": "SGT_CalibratePump($id, 'water', 10);"
+    },
+    {
+      "type": "Button",
+      "caption": "Kalibrierung Düngerpumpe (10 Sek)",
+      "onClick": "SGT_CalibratePump($id, 'nutrient', 10);"
+    }
+  ],
+  "status": [
+    {
+      "code": 102,
+      "icon": "active",
+      "caption": "Modul aktiv"
+    },
+    {
+      "code": 104,
+      "icon": "inactive",
+      "caption": "Modul inaktiv"
+    },
+    {
+      "code": 200,
+      "icon": "error",
+      "caption": "API-Key fehlt"
+    },
+    {
+      "code": 201,
+      "icon": "error",
+      "caption": "Keine Pumpen konfiguriert"
+    },
+    {
+      "code": 202,
+      "icon": "error",
+      "caption": "Keine Sensoren konfiguriert"
+    },
+    {
+      "code": 203,
+      "icon": "error",
+      "caption": "Leckage erkannt!"
+    }
+  ]
+}

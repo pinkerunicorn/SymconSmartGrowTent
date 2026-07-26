@@ -1,0 +1,16 @@
+{
+    "id": "{4839E6A8-20EC-4CDD-8448-0B2B3AD310AF}",
+    "name": "SmartGrowTent",
+    "type": 3,
+    "vendor": "Florian Graßinger",
+    "aliases": [
+        "Smart Grow Tent",
+        "SmartGrowTent"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "SGT",
+    "url": "https://github.com/pinkerunicorn/",
+    "author": "Florian Graßinger"
+}
