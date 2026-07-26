@@ -86,12 +86,30 @@ class SmartGrowTent extends IPSModuleStrict
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
             'PROFILE'      => 'SGT.VPD',
         ], 10);
-        $this->RegisterVariableString('Health', 'Gesundheitsstatus', '', 20);
-        $this->RegisterVariableFloat('DailyNutrientML', 'Tages-Dünger (ml)', 'SGT.Milliliter', 30);
-        $this->RegisterVariableInteger('LastWatering', 'Letzte Bewässerung', 'SGT.Timestamp', 40);
-        $this->RegisterVariableInteger('LastNutrient', 'Letzte Düngung', 'SGT.Timestamp', 50);
-        $this->RegisterVariableString('LastGeminiResponse', 'Letzte KI-Antwort', '', 60);
-        $this->RegisterVariableBoolean('SystemActive', 'System aktiv', '', 70);
+        $this->RegisterVariableString('Health', 'Gesundheitsstatus', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Leaf',
+        ], 20);
+        $this->RegisterVariableFloat('DailyNutrientML', 'Tages-Dünger (ml)', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'PROFILE'      => 'SGT.Milliliter',
+        ], 30);
+        $this->RegisterVariableInteger('LastWatering', 'Letzte Bewässerung', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'PROFILE'      => 'SGT.Timestamp',
+        ], 40);
+        $this->RegisterVariableInteger('LastNutrient', 'Letzte Düngung', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'PROFILE'      => 'SGT.Timestamp',
+        ], 50);
+        $this->RegisterVariableString('LastGeminiResponse', 'Letzte KI-Antwort', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'         => 'Robot',
+        ], 60);
+        $this->RegisterVariableBoolean('SystemActive', 'System aktiv', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
+            'ICON'         => 'Power',
+        ], 70);
         
         // RequestAction für SystemActive erlauben
         $this->EnableAction('SystemActive');
