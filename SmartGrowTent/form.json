@@ -15,6 +15,7 @@
           "name": "GeminiModel",
           "caption": "Modell",
           "options": [
+            { "label": "gemini-3.6-flash", "value": "gemini-3.6-flash" },
             { "label": "gemini-2.0-flash", "value": "gemini-2.0-flash" },
             { "label": "gemini-2.5-flash", "value": "gemini-2.5-flash" },
             { "label": "gemini-1.5-flash", "value": "gemini-1.5-flash" }

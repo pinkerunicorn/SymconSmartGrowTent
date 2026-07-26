@@ -16,7 +16,7 @@ class SmartGrowTent extends IPSModuleStrict
 
         // Registrierung der Properties
         $this->RegisterPropertyString('GeminiAPIKey', '');
-        $this->RegisterPropertyString('GeminiModel', 'gemini-2.0-flash');
+        $this->RegisterPropertyString('GeminiModel', 'gemini-3.6-flash');
         
         $this->RegisterPropertyInteger('PumpWaterID', 0);
         $this->RegisterPropertyInteger('PumpNutrientID', 0);
