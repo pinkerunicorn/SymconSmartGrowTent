@@ -82,7 +82,10 @@ class SmartGrowTent extends IPSModuleStrict
         }
 
         // Variablen Registrierung
-        $this->RegisterVariableFloat('VPD', 'Aktueller VPD', 'SGT.VPD', 10);
+        $this->RegisterVariableFloat('VPD', 'Aktueller VPD', [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'PROFILE'      => 'SGT.VPD',
+        ], 10);
         $this->RegisterVariableString('Health', 'Gesundheitsstatus', '', 20);
         $this->RegisterVariableFloat('DailyNutrientML', 'Tages-Dünger (ml)', 'SGT.Milliliter', 30);
         $this->RegisterVariableInteger('LastWatering', 'Letzte Bewässerung', 'SGT.Timestamp', 40);
@@ -284,7 +287,9 @@ class SmartGrowTent extends IPSModuleStrict
                 $isFanOn = @GetValueBoolean($fanSwitchID);
                 if ($shouldBeOn !== $isFanOn) {
                     $this->LogMessage("Schalte Lüfter " . ($shouldBeOn ? "EIN" : "AUS") . ". Grund: " . ($response['fan']['reason'] ?? ''), KL_NOTIFY);
-                    RequestAction($fanSwitchID, $shouldBeOn);
+                    if (!@RequestAction($fanSwitchID, $shouldBeOn)) {
+                        $this->SLog('WARNING', 'Lüfter-Befehl fehlgeschlagen', "ID: $fanSwitchID | Ziel: " . ($shouldBeOn ? 'AN' : 'AUS'));
+                    }
                 }
             }
         }
@@ -430,6 +435,10 @@ class SmartGrowTent extends IPSModuleStrict
         }
 
         $data = json_decode($result, true);
+        if (!is_array($data)) {
+            $this->SLog('ERROR', 'Ungültige JSON-Antwort', json_last_error_msg());
+            return null;
+        }
         if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
             $jsonText = $data['candidates'][0]['content']['parts'][0]['text'];
             return json_decode($jsonText, true);
