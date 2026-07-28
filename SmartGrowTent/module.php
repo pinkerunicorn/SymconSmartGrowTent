@@ -121,6 +121,7 @@ class SmartGrowTent extends IPSModuleStrict
         // Timer registrieren
         $this->RegisterTimer('AutomationCycle', 0, 'SGT_RunAutomation($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpWaterOff', 0, 'SGT_StopWaterPump($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('PumpCalibrationOff', 0, 'SGT_StopCalibration($_IPS["TARGET"]);');
     }
 
     public function ApplyChanges(): void
@@ -387,10 +388,27 @@ class SmartGrowTent extends IPSModuleStrict
         }
 
         @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
-        IPS_Sleep($seconds * 1000);
-        @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
+        $this->SetTimerInterval('PumpCalibrationOff', $seconds * 1000);
 
         return "Pumpe $type für $seconds Sekunden aktiviert. Bitte messen Sie das Volumen.";
+    }
+
+    /**
+     * Stoppt die Kalibrierung
+     */
+    public function StopCalibration(): void
+    {
+        $this->SetTimerInterval('PumpCalibrationOff', 0);
+        
+        $waterPump = $this->ReadPropertyInteger('PumpWaterID');
+        if ($waterPump !== 0) {
+            @HM_WriteValueFloat($waterPump, 'LEVEL', 0.0);
+        }
+        
+        $nutrientPump = $this->ReadPropertyInteger('PumpNutrientID');
+        if ($nutrientPump !== 0) {
+            @HM_WriteValueFloat($nutrientPump, 'LEVEL', 0.0);
+        }
     }
 
     /**
@@ -447,14 +465,21 @@ class SmartGrowTent extends IPSModuleStrict
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($httpCode !== 200) {
-            $this->SendDebug('Gemini API Error', 'HTTP ' . $httpCode . ' Response: ' . $result, 0);
+        try {
+            $result = curl_exec($ch);
+            if ($result === false) {
+                throw new \RuntimeException('cURL: ' . curl_error($ch));
+            }
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if ($httpCode !== 200) {
+                throw new \RuntimeException("HTTP {$httpCode}");
+            }
+        } catch (\Throwable $e) {
+            $this->SLogError('Gemini API-Fehler', $e->getMessage());
+            curl_close($ch);
             return null;
         }
+        curl_close($ch);
 
         $data = json_decode($result, true);
         if (!is_array($data)) {
@@ -463,7 +488,16 @@ class SmartGrowTent extends IPSModuleStrict
         }
         if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
             $jsonText = $data['candidates'][0]['content']['parts'][0]['text'];
-            return json_decode($jsonText, true);
+            try {
+                $decoded = json_decode($jsonText, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new \RuntimeException(json_last_error_msg());
+                }
+                return $decoded;
+            } catch (\Throwable $e) {
+                $this->SLogError('Gemini JSON-Fehler', $e->getMessage());
+                return null;
+            }
         }
 
         return null;
