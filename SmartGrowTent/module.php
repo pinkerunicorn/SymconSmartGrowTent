@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+
 /**
  * SmartGrowTent - IP-Symcon 9 Modul zur Automatisierung eines Cannabis Grow-Zelts.
  * 
@@ -10,6 +12,8 @@ declare(strict_types=1);
  */
 class SmartGrowTent extends IPSModuleStrict
 {
+    use SmartLog_Trait;
+
     public function Create(): void
     {
         parent::Create();
