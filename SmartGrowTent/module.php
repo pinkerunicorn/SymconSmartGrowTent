@@ -63,30 +63,9 @@ class SmartGrowTent extends IPSModuleStrict
         
         $this->RegisterPropertyInteger('AutomationInterval', 30);
 
-        // Variablen-Profile erstellen (keine Legacy-Profile mit ~ verwenden!)
-        if (!IPS_VariableProfileExists('SGT.VPD')) {
-            IPS_CreateVariableProfile('SGT.VPD', 2); // Float
-            IPS_SetVariableProfileDigits('SGT.VPD', 2);
-            IPS_SetVariableProfileText('SGT.VPD', '', ' kPa');
-            IPS_SetVariableProfileValues('SGT.VPD', 0, 3, 0.1);
-        }
-
-        if (!IPS_VariableProfileExists('SGT.Timestamp')) {
-            IPS_CreateVariableProfile('SGT.Timestamp', 1); // Integer
-            IPS_SetVariableProfileText('SGT.Timestamp', '', '');
-        }
-
-        if (!IPS_VariableProfileExists('SGT.Milliliter')) {
-            IPS_CreateVariableProfile('SGT.Milliliter', 2); // Float
-            IPS_SetVariableProfileDigits('SGT.Milliliter', 1);
-            IPS_SetVariableProfileText('SGT.Milliliter', '', ' ml');
-            IPS_SetVariableProfileValues('SGT.Milliliter', 0, 200, 1);
-        }
-
         // Variablen Registrierung
         $this->RegisterVariableFloat('VPD', 'Aktueller VPD', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'PROFILE'      => 'SGT.VPD',
         ], 10);
         $this->RegisterVariableString('Health', 'Gesundheitsstatus', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -94,15 +73,12 @@ class SmartGrowTent extends IPSModuleStrict
         ], 20);
         $this->RegisterVariableFloat('DailyNutrientML', 'Tages-Dünger (ml)', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'PROFILE'      => 'SGT.Milliliter',
         ], 30);
         $this->RegisterVariableInteger('LastWatering', 'Letzte Bewässerung', [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'PROFILE'      => 'SGT.Timestamp',
+            'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME,
         ], 40);
         $this->RegisterVariableInteger('LastNutrient', 'Letzte Düngung', [
-            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'PROFILE'      => 'SGT.Timestamp',
+            'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME,
         ], 50);
         $this->RegisterVariableString('LastGeminiResponse', 'Letzte KI-Antwort', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
