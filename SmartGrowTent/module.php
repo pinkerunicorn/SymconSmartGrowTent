@@ -19,8 +19,6 @@ class SmartGrowTent extends IPSModuleStrict
         parent::Create();
 
         // Registrierung der Properties
-        $this->RegisterPropertyString('GeminiAPIKey', '');
-        $this->RegisterPropertyString('GeminiModel', 'gemini-3.6-flash');
         
         $this->RegisterPropertyInteger('PumpWaterID', 0);
         $this->RegisterPropertyInteger('PumpNutrientID', 0);
@@ -129,9 +127,8 @@ class SmartGrowTent extends IPSModuleStrict
         parent::ApplyChanges();
 
         // Validierung der Konfiguration
-        $apiKey = $this->ReadPropertyString('GeminiAPIKey');
-        if (empty($apiKey)) {
-            $this->SetStatus(200); // Kein API Key
+        if (!$this->HasActiveParent()) {
+            $this->SetStatus(104); // Kein Parent verbunden
             return;
         }
 
@@ -437,70 +434,28 @@ class SmartGrowTent extends IPSModuleStrict
      */
     private function askGemini(string $prompt): ?array
     {
-        $apiKey = $this->ReadPropertyString('GeminiAPIKey');
-        $model = $this->ReadPropertyString('GeminiModel');
-        
-        if (empty($apiKey)) {
-            $this->SendDebug('Gemini API', 'Kein API Key konfiguriert', 0);
+        if (!$this->HasActiveParent()) {
+            $this->SLogError('Gemini API', 'Kein SmartGeminiIO verbunden');
             return null;
         }
-
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
         
-        $payload = [
-            'contents' => [
-                ['parts' => [['text' => $prompt]]]
-            ],
-            'generationConfig' => [
-                'temperature' => 0.2,
-                'responseMimeType' => 'application/json'
-            ]
-        ];
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        $parentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
         
-        try {
-            $result = curl_exec($ch);
-            if ($result === false) {
-                throw new \RuntimeException('cURL: ' . curl_error($ch));
-            }
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if ($httpCode !== 200) {
-                throw new \RuntimeException("HTTP {$httpCode}");
-            }
-        } catch (\Throwable $e) {
-            $this->SLogError('Gemini API-Fehler', $e->getMessage());
-            curl_close($ch);
+        // Nutze GIO_Query vom Parent anstelle von curl
+        // schemaJson wird auf 'application/json' gesetzt, da wir direkt JSON fordern
+        $jsonText = GIO_Query($parentID, $prompt, 'Du antwortest ausschließlich im JSON-Format.', 'application/json', 0.2);
+        
+        if (empty($jsonText)) {
             return null;
         }
-        curl_close($ch);
-
-        $data = json_decode($result, true);
-        if (!is_array($data)) {
-            $this->SLog('ERROR', 'Ungültige JSON-Antwort', json_last_error_msg());
+        
+        $decoded = json_decode($jsonText, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->SLogError('Gemini JSON-Fehler', json_last_error_msg());
             return null;
         }
-        if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
-            $jsonText = $data['candidates'][0]['content']['parts'][0]['text'];
-            try {
-                $decoded = json_decode($jsonText, true);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new \RuntimeException(json_last_error_msg());
-                }
-                return $decoded;
-            } catch (\Throwable $e) {
-                $this->SLogError('Gemini JSON-Fehler', $e->getMessage());
-                return null;
-            }
-        }
-
-        return null;
+        
+        return $decoded;
     }
 
     /**
