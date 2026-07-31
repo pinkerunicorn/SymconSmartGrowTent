@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
+require_once __DIR__ . '/../libs/Trait_DeviceAvailability.php';
 
 /**
  * SmartGrowTent - IP-Symcon 9 Modul zur Automatisierung eines Cannabis Grow-Zelts.
@@ -13,10 +14,14 @@ require_once __DIR__ . '/../libs/Trait_SmartLog.php';
 class SmartGrowTent extends IPSModuleStrict
 {
     use SmartLog_Trait;
+    use DeviceAvailability_Trait;
 
     public function Create(): void
     {
         parent::Create();
+
+        $this->RegisterPropertyInteger('AvailabilityAlarmPriority', 2);
+        $this->DA_RegisterAvailability(900);
 
         // Registrierung der Properties
         
@@ -101,6 +106,8 @@ class SmartGrowTent extends IPSModuleStrict
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
+        
+        $this->DA_ApplyPresentation();
 
         // Validierung der Konfiguration
         if (!$this->HasActiveParent()) {
@@ -187,10 +194,13 @@ class SmartGrowTent extends IPSModuleStrict
         if (isset($sensorData['sphere']['humidity']) && ($sensorData['sphere']['humidity'] < 5 || $sensorData['sphere']['humidity'] > 100)) $anomalies++;
 
         if ($anomalies > 2) {
+            $this->DA_SetAvailable(false, "Zu viele Sensor-Anomalien");
             $this->EmergencyStop();
             $this->LogMessage("Zu viele Sensor-Anomalien ($anomalies). Notstopp ausgeführt.", KL_ERROR);
             return;
         }
+        
+        $this->DA_SetAvailable(true);
 
         // VPD berechnen
         $vpd = 0.0;
