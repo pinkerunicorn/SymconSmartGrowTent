@@ -2,15 +2,17 @@
     "id": "{4839E6A8-20EC-4CDD-8448-0B2B3AD310AF}",
     "name": "SmartGrowTent",
     "type": 3,
-    "vendor": "Florian Graßinger",
+    "vendor": "Florian Gra\u00dfinger",
     "aliases": [
         "Smart Grow Tent",
         "SmartGrowTent"
     ],
-    "parentRequirements": ["{4C8B2A6D-9E3F-4A7B-8C5D-1F6E2A3B7C4D}"],
+    "parentRequirements": [
+        "{4C8B2A6D-9E3F-4A7B-8C5D-1F6E2A3B7C4D}"
+    ],
     "childRequirements": [],
     "implemented": [],
     "prefix": "SGT",
-    "url": "https://github.com/pinkerunicorn/",
-    "author": "Florian Graßinger"
+    "url": "https://github.com/pinkerunicorn/SymconSmartGrowTent/tree/main/SmartGrowTent",
+    "author": "Florian Gra\u00dfinger"
 }
