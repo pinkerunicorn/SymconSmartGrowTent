@@ -99,6 +99,7 @@ class SmartGrowTent extends IPSModuleStrict
         // Timer registrieren
         $this->RegisterTimer('AutomationCycle', 0, 'SGT_RunAutomation($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpWaterOff', 0, 'SGT_StopWaterPump($_IPS[\'TARGET\']);');
+        $this->RegisterTimer('PumpNutrientOff', 0, 'SGT_StopNutrientPump($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpCalibrationOff', 0, 'SGT_StopCalibration($_IPS["TARGET"]);');
     }
 
@@ -276,8 +277,7 @@ class SmartGrowTent extends IPSModuleStrict
                 if ($pumpID !== 0) {
                     $this->LogMessage("Gebe Dünger für $durationSec Sekunden ($estimatedML ml). Grund: " . ($response['nutrient']['reason'] ?? ''), KL_NOTIFY);
                     @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
-                    IPS_Sleep($durationSec * 1000); // Sync Sleep für kurze Intervalle
-                    @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
+                    $this->SetTimerInterval('PumpNutrientOff', $durationSec * 1000);
                     $this->SetValue('LastNutrient', time());
                     $this->SetValue('DailyNutrientML', $dailyNutrient + $estimatedML);
                 }
@@ -322,6 +322,19 @@ class SmartGrowTent extends IPSModuleStrict
     }
 
     /**
+     * Stoppt die Düngerpumpe
+     */
+    public function StopNutrientPump(): void
+    {
+        $this->SetTimerInterval('PumpNutrientOff', 0);
+        $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
+        if ($pumpID !== 0) {
+            @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
+            $this->LogMessage('Düngung planmäßig gestoppt.', KL_NOTIFY);
+        }
+    }
+
+    /**
      * Notstopp aller Systeme
      */
     public function EmergencyStop(): void
@@ -330,6 +343,7 @@ class SmartGrowTent extends IPSModuleStrict
         $this->SetValue('SystemActive', false);
         $this->SetTimerInterval('AutomationCycle', 0);
         $this->SetTimerInterval('PumpWaterOff', 0);
+        $this->SetTimerInterval('PumpNutrientOff', 0);
 
         $waterPump = $this->ReadPropertyInteger('PumpWaterID');
         if ($waterPump !== 0) {

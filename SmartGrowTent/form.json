@@ -2,29 +2,6 @@
   "elements": [
     {
       "type": "ExpansionPanel",
-      "caption": "Gemini KI Konfiguration",
-      "expanded": true,
-      "items": [
-        {
-          "type": "PasswordTextBox",
-          "name": "GeminiAPIKey",
-          "caption": "API Key"
-        },
-        {
-          "type": "Select",
-          "name": "GeminiModel",
-          "caption": "Modell",
-          "options": [
-            { "label": "gemini-3.6-flash", "value": "gemini-3.6-flash" },
-            { "label": "gemini-2.0-flash", "value": "gemini-2.0-flash" },
-            { "label": "gemini-2.5-flash", "value": "gemini-2.5-flash" },
-            { "label": "gemini-1.5-flash", "value": "gemini-1.5-flash" }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "ExpansionPanel",
       "caption": "Pumpen (HmIP-RGBW)",
       "items": [
         {
@@ -305,11 +282,6 @@
       "code": 104,
       "icon": "inactive",
       "caption": "Modul inaktiv"
-    },
-    {
-      "code": 200,
-      "icon": "error",
-      "caption": "API-Key fehlt"
     },
     {
       "code": 201,
