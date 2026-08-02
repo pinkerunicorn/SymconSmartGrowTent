@@ -248,7 +248,7 @@ class SmartGrowTent extends IPSModuleStrict
                 $this->SendDebug('Watering', 'Angeforderte Dauer überschreitet Maximum.', 0);
             } elseif (time() - $lastWatering < $minWaterWaitMin * 60) {
                 $this->SendDebug('Watering', 'Mindestwartezeit für Wasser nicht erreicht.', 0);
-            if ($durationSec > 0) {
+            } elseif ($durationSec > 0) {
                 $pumpID = $this->ReadPropertyInteger('PumpWaterID');
                 if ($pumpID !== 0) {
                     $this->SLogInfo("Starte Bewässerung für $durationSec Sekunden. Grund: " . ($response['water']['reason'] ?? ''));
@@ -277,7 +277,7 @@ class SmartGrowTent extends IPSModuleStrict
                 $this->SendDebug('Nutrient', 'Mindestwartezeit für Dünger nicht erreicht.', 0);
             } elseif (($dailyNutrient + $estimatedML) > $maxDaily) {
                 $this->SendDebug('Nutrient', 'Tageslimit für Dünger erreicht.', 0);
-            if ($durationSec > 0) {
+            } elseif ($durationSec > 0) {
                 $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
                 if ($pumpID !== 0) {
                     $this->SLogInfo("Gebe Dünger für $durationSec Sekunden ($estimatedML ml). Grund: " . ($response['nutrient']['reason'] ?? ''));
