@@ -132,12 +132,26 @@ class SmartGrowTent extends IPSModuleStrict
         // Modul ist aktiv
         $this->SetStatus(102);
 
+        $leakSensorID = $this->ReadPropertyInteger('LeakSensorID');
+        if ($leakSensorID !== 0) {
+            $this->RegisterMessage($leakSensorID, 10603);
+        }
+
         // Timer setzen
         $interval = $this->ReadPropertyInteger('AutomationInterval');
         if ($interval > 0 && $this->GetValue('SystemActive')) {
             $this->SetTimerInterval('AutomationCycle', $interval * 60 * 1000);
         } else {
             $this->SetTimerInterval('AutomationCycle', 0);
+        }
+    }
+
+    public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
+    {
+        if ($Message === 10603 && $SenderID === $this->ReadPropertyInteger('LeakSensorID') && $Data[0] === true) {
+            $this->EmergencyStop();
+            $this->SetStatus(203);
+            $this->SLogError('LECKAGE ERKANNT! Notstopp ausgeführt.');
         }
     }
 
@@ -149,11 +163,11 @@ class SmartGrowTent extends IPSModuleStrict
                 if ($Value) {
                     $interval = $this->ReadPropertyInteger('AutomationInterval');
                     $this->SetTimerInterval('AutomationCycle', $interval * 60 * 1000);
-                    $this->LogMessage('System aktiviert.', KL_NOTIFY);
+                    $this->SLogInfo('System aktiviert.');
                 } else {
                     $this->SetTimerInterval('AutomationCycle', 0);
                     $this->EmergencyStop();
-                    $this->LogMessage('System deaktiviert. Notstopp ausgeführt.', KL_WARNING);
+                    $this->SLogError('System deaktiviert. Notstopp ausgeführt.');
                 }
                 break;
             default:
@@ -168,15 +182,6 @@ class SmartGrowTent extends IPSModuleStrict
     {
         if (!$this->GetValue('SystemActive')) {
             $this->SendDebug('RunAutomation', 'System ist inaktiv, überspringe Zyklus.', 0);
-            return;
-        }
-
-        // Leckageprüfung
-        $leakSensorID = $this->ReadPropertyInteger('LeakSensorID');
-        if ($leakSensorID !== 0 && @GetValueBoolean($leakSensorID)) {
-            $this->EmergencyStop();
-            $this->SetStatus(203); // Fehler: Leck erkannt
-            $this->LogMessage('LECKAGE ERKANNT! Notstopp ausgeführt.', KL_ERROR);
             return;
         }
 
@@ -196,7 +201,7 @@ class SmartGrowTent extends IPSModuleStrict
         if ($anomalies > 2) {
             $this->DA_SetAvailable(false, "Zu viele Sensor-Anomalien");
             $this->EmergencyStop();
-            $this->LogMessage("Zu viele Sensor-Anomalien ($anomalies). Notstopp ausgeführt.", KL_ERROR);
+            $this->SLogError("Zu viele Sensor-Anomalien ($anomalies). Notstopp ausgeführt.");
             return;
         }
         
@@ -216,7 +221,7 @@ class SmartGrowTent extends IPSModuleStrict
 
         $response = $this->askGemini($prompt);
         if ($response === null) {
-            $this->LogMessage('Fehler bei der Kommunikation mit Gemini.', KL_ERROR);
+            $this->SLogError('Fehler bei der Kommunikation mit Gemini.');
             return;
         }
 
@@ -243,10 +248,10 @@ class SmartGrowTent extends IPSModuleStrict
                 $this->SendDebug('Watering', 'Angeforderte Dauer überschreitet Maximum.', 0);
             } elseif (time() - $lastWatering < $minWaterWaitMin * 60) {
                 $this->SendDebug('Watering', 'Mindestwartezeit für Wasser nicht erreicht.', 0);
-            } elseif ($durationSec > 0) {
+            if ($durationSec > 0) {
                 $pumpID = $this->ReadPropertyInteger('PumpWaterID');
                 if ($pumpID !== 0) {
-                    $this->LogMessage("Starte Bewässerung für $durationSec Sekunden. Grund: " . ($response['water']['reason'] ?? ''), KL_NOTIFY);
+                    $this->SLogInfo("Starte Bewässerung für $durationSec Sekunden. Grund: " . ($response['water']['reason'] ?? ''));
                     @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
                     $this->SetTimerInterval('PumpWaterOff', $durationSec * 1000);
                     $this->SetValue('LastWatering', time());
@@ -272,10 +277,10 @@ class SmartGrowTent extends IPSModuleStrict
                 $this->SendDebug('Nutrient', 'Mindestwartezeit für Dünger nicht erreicht.', 0);
             } elseif (($dailyNutrient + $estimatedML) > $maxDaily) {
                 $this->SendDebug('Nutrient', 'Tageslimit für Dünger erreicht.', 0);
-            } elseif ($durationSec > 0) {
+            if ($durationSec > 0) {
                 $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
                 if ($pumpID !== 0) {
-                    $this->LogMessage("Gebe Dünger für $durationSec Sekunden ($estimatedML ml). Grund: " . ($response['nutrient']['reason'] ?? ''), KL_NOTIFY);
+                    $this->SLogInfo("Gebe Dünger für $durationSec Sekunden ($estimatedML ml). Grund: " . ($response['nutrient']['reason'] ?? ''));
                     @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
                     $this->SetTimerInterval('PumpNutrientOff', $durationSec * 1000);
                     $this->SetValue('LastNutrient', time());
@@ -291,9 +296,9 @@ class SmartGrowTent extends IPSModuleStrict
                 $shouldBeOn = (bool)$response['fan']['should_be_on'];
                 $isFanOn = @GetValueBoolean($fanSwitchID);
                 if ($shouldBeOn !== $isFanOn) {
-                    $this->LogMessage("Schalte Lüfter " . ($shouldBeOn ? "EIN" : "AUS") . ". Grund: " . ($response['fan']['reason'] ?? ''), KL_NOTIFY);
+                    $this->SLogInfo("Schalte Lüfter " . ($shouldBeOn ? "EIN" : "AUS") . ". Grund: " . ($response['fan']['reason'] ?? ''));
                     if (!@RequestAction($fanSwitchID, $shouldBeOn)) {
-                        $this->SLog('WARNING', 'Lüfter-Befehl fehlgeschlagen', "ID: $fanSwitchID | Ziel: " . ($shouldBeOn ? 'AN' : 'AUS'));
+                        $this->SLogError('Lüfter-Befehl fehlgeschlagen', "ID: $fanSwitchID | Ziel: " . ($shouldBeOn ? 'AN' : 'AUS'));
                     }
                 }
             }
@@ -317,7 +322,7 @@ class SmartGrowTent extends IPSModuleStrict
         $pumpID = $this->ReadPropertyInteger('PumpWaterID');
         if ($pumpID !== 0) {
             @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
-            $this->LogMessage('Bewässerung planmäßig gestoppt.', KL_NOTIFY);
+            $this->SLogInfo('Bewässerung planmäßig gestoppt.');
         }
     }
 
@@ -330,7 +335,7 @@ class SmartGrowTent extends IPSModuleStrict
         $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
         if ($pumpID !== 0) {
             @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
-            $this->LogMessage('Düngung planmäßig gestoppt.', KL_NOTIFY);
+            $this->SLogInfo('Düngung planmäßig gestoppt.');
         }
     }
 
@@ -358,7 +363,7 @@ class SmartGrowTent extends IPSModuleStrict
             @HM_WriteValueFloat($phDownPump, 'LEVEL', 0.0);
         }
 
-        $this->LogMessage('NOTSTOPP ALLER PUMPEN DURCHGEFÜHRT!', KL_ERROR);
+        $this->SLogError('NOTSTOPP ALLER PUMPEN DURCHGEFÜHRT!');
     }
 
     /**
