@@ -33,17 +33,11 @@ class SmartGrowTent extends IPSModuleStrict
         $this->RegisterPropertyInteger('FanSwitchID', 0);
         $this->RegisterPropertyInteger('FanPowerID', 0);
         
-        $this->RegisterPropertyString('Plant1Name', 'Pflanze 1');
-        $this->RegisterPropertyInteger('Plant1MoistureID', 0);
-        $this->RegisterPropertyInteger('Plant1ECID', 0);
-        
-        $this->RegisterPropertyString('Plant2Name', 'Pflanze 2');
-        $this->RegisterPropertyInteger('Plant2MoistureID', 0);
-        $this->RegisterPropertyInteger('Plant2ECID', 0);
-        
-        $this->RegisterPropertyString('Plant3Name', 'Pflanze 3');
-        $this->RegisterPropertyInteger('Plant3MoistureID', 0);
-        $this->RegisterPropertyInteger('Plant3ECID', 0);
+        for ($i = 1; $i <= 3; $i++) {
+            $this->RegisterPropertyString("Plant{$i}Name", "Pflanze $i");
+            $this->RegisterPropertyInteger("Plant{$i}MoistureID", 0);
+            $this->RegisterPropertyInteger("Plant{$i}ECID", 0);
+        }
         
         $this->RegisterPropertyInteger('SphereTempID', 0);
         $this->RegisterPropertyInteger('SphereHumidityID', 0);
@@ -146,7 +140,7 @@ class SmartGrowTent extends IPSModuleStrict
         }
     }
 
-    public function MessageSink($TimeStamp, $SenderID, $Message, $Data): void
+    public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
     {
         if ($Message === 10603 && $SenderID === $this->ReadPropertyInteger('LeakSensorID') && $Data[0] === true) {
             $this->EmergencyStop();
@@ -155,7 +149,7 @@ class SmartGrowTent extends IPSModuleStrict
         }
     }
 
-    public function RequestAction($Ident, $Value): void
+    public function RequestAction(string $Ident, mixed $Value): void
     {
         switch ($Ident) {
             case 'SystemActive':
@@ -238,21 +232,16 @@ class SmartGrowTent extends IPSModuleStrict
         // Wasser-Pumpe
         if (isset($response['water']) && $response['water']['activate'] === true) {
             $durationSec = (int)$response['water']['duration_sec'];
-            $maxWaterSec = $this->ReadPropertyInteger('MaxWaterSec');
-            $minWaterWaitMin = $this->ReadPropertyInteger('MinWaterWaitMin');
-            $lastWatering = $this->GetValue('LastWatering');
-            
-            if (!$isLightOn) {
-                $this->SendDebug('Watering', 'Licht ist aus, keine Bewässerung.', 0);
-            } elseif ($durationSec > $maxWaterSec) {
-                $this->SendDebug('Watering', 'Angeforderte Dauer überschreitet Maximum.', 0);
-            } elseif (time() - $lastWatering < $minWaterWaitMin * 60) {
-                $this->SendDebug('Watering', 'Mindestwartezeit für Wasser nicht erreicht.', 0);
-            } elseif ($durationSec > 0) {
+            if ($this->validatePumpOperation('water', $durationSec, $isLightOn) && $durationSec > 0) {
                 $pumpID = $this->ReadPropertyInteger('PumpWaterID');
                 if ($pumpID !== 0) {
                     $this->SLogInfo("Starte Bewässerung für $durationSec Sekunden. Grund: " . ($response['water']['reason'] ?? ''));
-                    @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
+                    try {
+                        HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
+                    } catch (Exception $e) {
+                        $this->SLogWarning('Wasser-Pumpe konnte nicht aktiviert werden: ' . $e->getMessage());
+                        return;
+                    }
                     $this->SetTimerInterval('PumpWaterOff', $durationSec * 1000);
                     $this->SetValue('LastWatering', time());
                 }
@@ -262,26 +251,18 @@ class SmartGrowTent extends IPSModuleStrict
         // Dünger-Pumpe
         if (isset($response['nutrient']) && $response['nutrient']['activate'] === true) {
             $durationSec = (int)$response['nutrient']['duration_sec'];
-            $maxNutrientSec = $this->ReadPropertyInteger('MaxNutrientSec');
-            $minNutrientWaitMin = $this->ReadPropertyInteger('MinNutrientWaitMin');
-            $lastNutrient = $this->GetValue('LastNutrient');
             $estimatedML = (float)($response['nutrient']['estimated_ml'] ?? 0);
-            $dailyNutrient = $this->GetValue('DailyNutrientML');
-            $maxDaily = $this->ReadPropertyFloat('MaxNutrientDailyML');
-            
-            if ($this->ReadPropertyBoolean('FlushPhase')) {
-                $this->SendDebug('Nutrient', 'FlushPhase aktiv, kein Dünger.', 0);
-            } elseif ($durationSec > $maxNutrientSec) {
-                $this->SendDebug('Nutrient', 'Angeforderte Düngerdauer überschreitet Maximum.', 0);
-            } elseif (time() - $lastNutrient < $minNutrientWaitMin * 60) {
-                $this->SendDebug('Nutrient', 'Mindestwartezeit für Dünger nicht erreicht.', 0);
-            } elseif (($dailyNutrient + $estimatedML) > $maxDaily) {
-                $this->SendDebug('Nutrient', 'Tageslimit für Dünger erreicht.', 0);
-            } elseif ($durationSec > 0) {
+            if ($this->validatePumpOperation('nutrient', $durationSec, $isLightOn, $estimatedML) && $durationSec > 0) {
                 $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
                 if ($pumpID !== 0) {
+                    $dailyNutrient = $this->GetValue('DailyNutrientML');
                     $this->SLogInfo("Gebe Dünger für $durationSec Sekunden ($estimatedML ml). Grund: " . ($response['nutrient']['reason'] ?? ''));
-                    @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
+                    try {
+                        HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
+                    } catch (Exception $e) {
+                        $this->SLogWarning('Dünger-Pumpe konnte nicht aktiviert werden: ' . $e->getMessage());
+                        return;
+                    }
                     $this->SetTimerInterval('PumpNutrientOff', $durationSec * 1000);
                     $this->SetValue('LastNutrient', time());
                     $this->SetValue('DailyNutrientML', $dailyNutrient + $estimatedML);
@@ -294,11 +275,18 @@ class SmartGrowTent extends IPSModuleStrict
             $fanSwitchID = $this->ReadPropertyInteger('FanSwitchID');
             if ($fanSwitchID !== 0) {
                 $shouldBeOn = (bool)$response['fan']['should_be_on'];
-                $isFanOn = @GetValueBoolean($fanSwitchID);
+                try {
+                    $isFanOn = GetValueBoolean($fanSwitchID);
+                } catch (Exception $e) {
+                    $this->SLogWarning('Lüfter-Status konnte nicht gelesen werden: ' . $e->getMessage());
+                    $isFanOn = !$shouldBeOn; // Erzwinge Schaltversuch
+                }
                 if ($shouldBeOn !== $isFanOn) {
                     $this->SLogInfo("Schalte Lüfter " . ($shouldBeOn ? "EIN" : "AUS") . ". Grund: " . ($response['fan']['reason'] ?? ''));
-                    if (!@RequestAction($fanSwitchID, $shouldBeOn)) {
-                        $this->SLogError('Lüfter-Befehl fehlgeschlagen', "ID: $fanSwitchID | Ziel: " . ($shouldBeOn ? 'AN' : 'AUS'));
+                    try {
+                        RequestAction($fanSwitchID, $shouldBeOn);
+                    } catch (Exception $e) {
+                        $this->SLogWarning('Lüfter-Befehl fehlgeschlagen: ' . $e->getMessage());
                     }
                 }
             }
@@ -320,10 +308,7 @@ class SmartGrowTent extends IPSModuleStrict
     {
         $this->SetTimerInterval('PumpWaterOff', 0);
         $pumpID = $this->ReadPropertyInteger('PumpWaterID');
-        if ($pumpID !== 0) {
-            @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
-            $this->SLogInfo('Bewässerung planmäßig gestoppt.');
-        }
+        $this->deactivatePump($pumpID, 'Bewässerung planmäßig gestoppt');
     }
 
     /**
@@ -333,10 +318,7 @@ class SmartGrowTent extends IPSModuleStrict
     {
         $this->SetTimerInterval('PumpNutrientOff', 0);
         $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
-        if ($pumpID !== 0) {
-            @HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
-            $this->SLogInfo('Düngung planmäßig gestoppt.');
-        }
+        $this->deactivatePump($pumpID, 'Düngung planmäßig gestoppt');
     }
 
     /**
@@ -350,18 +332,9 @@ class SmartGrowTent extends IPSModuleStrict
         $this->SetTimerInterval('PumpWaterOff', 0);
         $this->SetTimerInterval('PumpNutrientOff', 0);
 
-        $waterPump = $this->ReadPropertyInteger('PumpWaterID');
-        if ($waterPump !== 0) {
-            @HM_WriteValueFloat($waterPump, 'LEVEL', 0.0);
-        }
-        $nutrientPump = $this->ReadPropertyInteger('PumpNutrientID');
-        if ($nutrientPump !== 0) {
-            @HM_WriteValueFloat($nutrientPump, 'LEVEL', 0.0);
-        }
-        $phDownPump = $this->ReadPropertyInteger('PumpPHDownID');
-        if ($phDownPump !== 0) {
-            @HM_WriteValueFloat($phDownPump, 'LEVEL', 0.0);
-        }
+        $this->deactivatePump($this->ReadPropertyInteger('PumpWaterID'), 'Notstopp Wasserpumpe');
+        $this->deactivatePump($this->ReadPropertyInteger('PumpNutrientID'), 'Notstopp Düngerpumpe');
+        $this->deactivatePump($this->ReadPropertyInteger('PumpPHDownID'), 'Notstopp pH-Down-Pumpe');
 
         $this->SLogError('NOTSTOPP ALLER PUMPEN DURCHGEFÜHRT!');
     }
@@ -388,7 +361,12 @@ class SmartGrowTent extends IPSModuleStrict
             return "Pumpe $type ist nicht konfiguriert.";
         }
 
-        @HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
+        try {
+            HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
+        } catch (Exception $e) {
+            $this->SLogWarning("Kalibrier-Pumpe $type konnte nicht aktiviert werden: " . $e->getMessage());
+            return "Fehler: Pumpe $type konnte nicht aktiviert werden.";
+        }
         $this->SetTimerInterval('PumpCalibrationOff', $seconds * 1000);
 
         return "Pumpe $type für $seconds Sekunden aktiviert. Bitte messen Sie das Volumen.";
@@ -401,15 +379,8 @@ class SmartGrowTent extends IPSModuleStrict
     {
         $this->SetTimerInterval('PumpCalibrationOff', 0);
         
-        $waterPump = $this->ReadPropertyInteger('PumpWaterID');
-        if ($waterPump !== 0) {
-            @HM_WriteValueFloat($waterPump, 'LEVEL', 0.0);
-        }
-        
-        $nutrientPump = $this->ReadPropertyInteger('PumpNutrientID');
-        if ($nutrientPump !== 0) {
-            @HM_WriteValueFloat($nutrientPump, 'LEVEL', 0.0);
-        }
+        $this->deactivatePump($this->ReadPropertyInteger('PumpWaterID'), 'Kalibrierung gestoppt (Wasser)');
+        $this->deactivatePump($this->ReadPropertyInteger('PumpNutrientID'), 'Kalibrierung gestoppt (Dünger)');
     }
 
     /**
@@ -478,34 +449,34 @@ class SmartGrowTent extends IPSModuleStrict
             if ($moistID !== 0 || $ecID !== 0) {
                 $data["Plant{$i}"] = [
                     'name' => $name,
-                    'moisture' => $moistID !== 0 ? @GetValueFloat($moistID) : null,
-                    'ec' => $ecID !== 0 ? @GetValueFloat($ecID) : null
+                    'moisture' => $moistID !== 0 ? $this->safeGetFloat($moistID, "Plant{$i}Moisture") : null,
+                    'ec' => $ecID !== 0 ? $this->safeGetFloat($ecID, "Plant{$i}EC") : null
                 ];
             }
         }
 
         // Sphere Sensoren
         $tempID = $this->ReadPropertyInteger('SphereTempID');
-        if ($tempID !== 0) $data['sphere']['temp'] = @GetValueFloat($tempID);
+        if ($tempID !== 0) $data['sphere']['temp'] = $this->safeGetFloat($tempID, 'SphereTemp');
         
         $humID = $this->ReadPropertyInteger('SphereHumidityID');
-        if ($humID !== 0) $data['sphere']['humidity'] = @GetValueFloat($humID);
+        if ($humID !== 0) $data['sphere']['humidity'] = $this->safeGetFloat($humID, 'SphereHumidity');
         
         $lightID = $this->ReadPropertyInteger('SphereLightID');
-        if ($lightID !== 0) $data['sphere']['light_ppfd'] = @GetValueFloat($lightID);
+        if ($lightID !== 0) $data['sphere']['light_ppfd'] = $this->safeGetFloat($lightID, 'SphereLight');
 
         // Equipment
         $lightSwitchID = $this->ReadPropertyInteger('LightSwitchID');
-        if ($lightSwitchID !== 0) $data['equipment']['light_switch'] = @GetValueBoolean($lightSwitchID);
+        if ($lightSwitchID !== 0) $data['equipment']['light_switch'] = $this->safeGetBool($lightSwitchID, 'LightSwitch');
         
         $lightPowerID = $this->ReadPropertyInteger('LightPowerID');
-        if ($lightPowerID !== 0) $data['equipment']['light_power_w'] = @GetValueFloat($lightPowerID);
+        if ($lightPowerID !== 0) $data['equipment']['light_power_w'] = $this->safeGetFloat($lightPowerID, 'LightPower');
         
         $fanSwitchID = $this->ReadPropertyInteger('FanSwitchID');
-        if ($fanSwitchID !== 0) $data['equipment']['fan_switch'] = @GetValueBoolean($fanSwitchID);
+        if ($fanSwitchID !== 0) $data['equipment']['fan_switch'] = $this->safeGetBool($fanSwitchID, 'FanSwitch');
         
         $fanPowerID = $this->ReadPropertyInteger('FanPowerID');
-        if ($fanPowerID !== 0) $data['equipment']['fan_power_w'] = @GetValueFloat($fanPowerID);
+        if ($fanPowerID !== 0) $data['equipment']['fan_power_w'] = $this->safeGetFloat($fanPowerID, 'FanPower');
 
         // Historische Daten
         $data['tracking'] = [
@@ -595,6 +566,90 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Objekt in exakt diesem Format:
                 $this->SetValue('DailyNutrientML', 0.0);
                 $this->SendDebug('ResetCounters', 'Tageszähler zurückgesetzt.', 0);
             }
+        }
+    }
+
+    /**
+     * Deaktiviert eine Pumpe sicher via HM_WriteValueFloat LEVEL=0.0
+     */
+    private function deactivatePump(int $pumpID, string $name): void
+    {
+        if ($pumpID === 0) {
+            return;
+        }
+        try {
+            HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
+            $this->SLogInfo($name . '.');
+        } catch (Exception $e) {
+            $this->SLogWarning("Pumpe konnte nicht deaktiviert werden ($name): " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Validiert ob eine Pumpenoperation erlaubt ist (Licht, Dauer, Wartezeit, Tageslimit)
+     */
+    private function validatePumpOperation(string $type, int $durationSec, bool $isLightOn, float $estimatedML = 0.0): bool
+    {
+        $label = $type === 'water' ? 'Watering' : 'Nutrient';
+
+        if (!$isLightOn) {
+            $this->SendDebug($label, 'Licht ist aus, keine Aktion.', 0);
+            return false;
+        }
+
+        $maxSecProp = $type === 'water' ? 'MaxWaterSec' : 'MaxNutrientSec';
+        if ($durationSec > $this->ReadPropertyInteger($maxSecProp)) {
+            $this->SendDebug($label, 'Angeforderte Dauer überschreitet Maximum.', 0);
+            return false;
+        }
+
+        $waitProp = $type === 'water' ? 'MinWaterWaitMin' : 'MinNutrientWaitMin';
+        $lastIdent = $type === 'water' ? 'LastWatering' : 'LastNutrient';
+        if (time() - $this->GetValue($lastIdent) < $this->ReadPropertyInteger($waitProp) * 60) {
+            $this->SendDebug($label, 'Mindestwartezeit nicht erreicht.', 0);
+            return false;
+        }
+
+        // Zusätzliche Nutrient-Prüfungen
+        if ($type === 'nutrient') {
+            if ($this->ReadPropertyBoolean('FlushPhase')) {
+                $this->SendDebug($label, 'FlushPhase aktiv, kein Dünger.', 0);
+                return false;
+            }
+            $dailyNutrient = $this->GetValue('DailyNutrientML');
+            $maxDaily = $this->ReadPropertyFloat('MaxNutrientDailyML');
+            if (($dailyNutrient + $estimatedML) > $maxDaily) {
+                $this->SendDebug($label, 'Tageslimit für Dünger erreicht.', 0);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Liest einen Float-Wert sicher, mit Logging bei Fehler
+     */
+    private function safeGetFloat(int $variableID, string $context): ?float
+    {
+        try {
+            return GetValueFloat($variableID);
+        } catch (Exception $e) {
+            $this->SLogWarning("Sensorwert konnte nicht gelesen werden ($context, ID $variableID): " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Liest einen Boolean-Wert sicher, mit Logging bei Fehler
+     */
+    private function safeGetBool(int $variableID, string $context): ?bool
+    {
+        try {
+            return GetValueBoolean($variableID);
+        } catch (Exception $e) {
+            $this->SLogWarning("Schaltstatus konnte nicht gelesen werden ($context, ID $variableID): " . $e->getMessage());
+            return null;
         }
     }
 }
