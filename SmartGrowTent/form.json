@@ -5,19 +5,19 @@
       "caption": "Pumpen (HmIP-RGBW)",
       "items": [
         {
-          "type": "SelectInstance",
+          "type": "SelectVariable",
           "name": "PumpWaterID",
-          "caption": "Wasserpumpe (Kanal R)"
+          "caption": "Wasserpumpe (Kanal R LEVEL-Variable)"
         },
         {
-          "type": "SelectInstance",
+          "type": "SelectVariable",
           "name": "PumpNutrientID",
-          "caption": "Düngerpumpe (Kanal G)"
+          "caption": "Düngerpumpe (Kanal G LEVEL-Variable)"
         },
         {
-          "type": "SelectInstance",
+          "type": "SelectVariable",
           "name": "PumpPHDownID",
-          "caption": "pH-Down Pumpe (Kanal B) – optional"
+          "caption": "pH-Down Pumpe (Kanal B LEVEL-Variable) – optional"
         }
       ]
     },

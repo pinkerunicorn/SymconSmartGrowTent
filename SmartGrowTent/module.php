@@ -236,10 +236,7 @@ class SmartGrowTent extends IPSModuleStrict
                 $pumpID = $this->ReadPropertyInteger('PumpWaterID');
                 if ($pumpID !== 0) {
                     $this->SLogInfo("Starte Bewässerung für $durationSec Sekunden. Grund: " . ($response['water']['reason'] ?? ''));
-                    try {
-                        HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
-                    } catch (Exception $e) {
-                        $this->SLogWarning('Wasser-Pumpe konnte nicht aktiviert werden: ' . $e->getMessage());
+                    if (!$this->setPumpLevel($pumpID, 1.0, 'Wasserpumpe')) {
                         return;
                     }
                     $this->SetTimerInterval('PumpWaterOff', $durationSec * 1000);
@@ -257,10 +254,7 @@ class SmartGrowTent extends IPSModuleStrict
                 if ($pumpID !== 0) {
                     $dailyNutrient = $this->GetValue('DailyNutrientML');
                     $this->SLogInfo("Gebe Dünger für $durationSec Sekunden ($estimatedML ml). Grund: " . ($response['nutrient']['reason'] ?? ''));
-                    try {
-                        HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
-                    } catch (Exception $e) {
-                        $this->SLogWarning('Dünger-Pumpe konnte nicht aktiviert werden: ' . $e->getMessage());
+                    if (!$this->setPumpLevel($pumpID, 1.0, 'Düngerpumpe')) {
                         return;
                     }
                     $this->SetTimerInterval('PumpNutrientOff', $durationSec * 1000);
@@ -308,7 +302,7 @@ class SmartGrowTent extends IPSModuleStrict
     {
         $this->SetTimerInterval('PumpWaterOff', 0);
         $pumpID = $this->ReadPropertyInteger('PumpWaterID');
-        $this->deactivatePump($pumpID, 'Bewässerung planmäßig gestoppt');
+        $this->setPumpLevel($pumpID, 0.0, 'Bewässerung planmäßig gestoppt');
     }
 
     /**
@@ -318,7 +312,7 @@ class SmartGrowTent extends IPSModuleStrict
     {
         $this->SetTimerInterval('PumpNutrientOff', 0);
         $pumpID = $this->ReadPropertyInteger('PumpNutrientID');
-        $this->deactivatePump($pumpID, 'Düngung planmäßig gestoppt');
+        $this->setPumpLevel($pumpID, 0.0, 'Düngung planmäßig gestoppt');
     }
 
     /**
@@ -332,9 +326,9 @@ class SmartGrowTent extends IPSModuleStrict
         $this->SetTimerInterval('PumpWaterOff', 0);
         $this->SetTimerInterval('PumpNutrientOff', 0);
 
-        $this->deactivatePump($this->ReadPropertyInteger('PumpWaterID'), 'Notstopp Wasserpumpe');
-        $this->deactivatePump($this->ReadPropertyInteger('PumpNutrientID'), 'Notstopp Düngerpumpe');
-        $this->deactivatePump($this->ReadPropertyInteger('PumpPHDownID'), 'Notstopp pH-Down-Pumpe');
+        $this->setPumpLevel($this->ReadPropertyInteger('PumpWaterID'), 0.0, 'Notstopp Wasserpumpe');
+        $this->setPumpLevel($this->ReadPropertyInteger('PumpNutrientID'), 0.0, 'Notstopp Düngerpumpe');
+        $this->setPumpLevel($this->ReadPropertyInteger('PumpPHDownID'), 0.0, 'Notstopp pH-Down-Pumpe');
 
         $this->SLogError('NOTSTOPP ALLER PUMPEN DURCHGEFÜHRT!');
     }
@@ -361,10 +355,7 @@ class SmartGrowTent extends IPSModuleStrict
             return "Pumpe $type ist nicht konfiguriert.";
         }
 
-        try {
-            HM_WriteValueFloat($pumpID, 'LEVEL', 1.0);
-        } catch (Exception $e) {
-            $this->SLogWarning("Kalibrier-Pumpe $type konnte nicht aktiviert werden: " . $e->getMessage());
+        if (!$this->setPumpLevel($pumpID, 1.0, "Kalibrierung $type")) {
             return "Fehler: Pumpe $type konnte nicht aktiviert werden.";
         }
         $this->SetTimerInterval('PumpCalibrationOff', $seconds * 1000);
@@ -379,8 +370,8 @@ class SmartGrowTent extends IPSModuleStrict
     {
         $this->SetTimerInterval('PumpCalibrationOff', 0);
         
-        $this->deactivatePump($this->ReadPropertyInteger('PumpWaterID'), 'Kalibrierung gestoppt (Wasser)');
-        $this->deactivatePump($this->ReadPropertyInteger('PumpNutrientID'), 'Kalibrierung gestoppt (Dünger)');
+        $this->setPumpLevel($this->ReadPropertyInteger('PumpWaterID'), 0.0, 'Kalibrierung gestoppt (Wasser)');
+        $this->setPumpLevel($this->ReadPropertyInteger('PumpNutrientID'), 0.0, 'Kalibrierung gestoppt (Dünger)');
     }
 
     /**
@@ -570,18 +561,29 @@ Antworte AUSSCHLIESSLICH mit einem JSON-Objekt in exakt diesem Format:
     }
 
     /**
-     * Deaktiviert eine Pumpe sicher via HM_WriteValueFloat LEVEL=0.0
+     * Steuert eine Pumpe sicher (unterstützt sowohl Instanz-IDs als auch Variable-IDs)
      */
-    private function deactivatePump(int $pumpID, string $name): void
+    private function setPumpLevel(int $pumpID, float $level, string $name = ''): bool
     {
         if ($pumpID === 0) {
-            return;
+            return false;
         }
         try {
-            HM_WriteValueFloat($pumpID, 'LEVEL', 0.0);
-            $this->SLogInfo($name . '.');
+            if (IPS_VariableExists($pumpID)) {
+                RequestAction($pumpID, $level);
+            } elseif (IPS_InstanceExists($pumpID)) {
+                @HM_WriteValueFloat($pumpID, 'LEVEL', $level);
+            } else {
+                $this->SLogWarning("Ungültige Objekt-ID für Pumpe ($name): $pumpID");
+                return false;
+            }
+            if ($name !== '') {
+                $this->SLogInfo($name);
+            }
+            return true;
         } catch (Exception $e) {
-            $this->SLogWarning("Pumpe konnte nicht deaktiviert werden ($name): " . $e->getMessage());
+            $this->SLogWarning("Pumpe konnte nicht gesteuert werden ($name): " . $e->getMessage());
+            return false;
         }
     }
 
