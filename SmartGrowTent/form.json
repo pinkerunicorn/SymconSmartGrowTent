@@ -2,6 +2,17 @@
   "elements": [
     {
       "type": "ExpansionPanel",
+      "caption": "KI Konfiguration",
+      "items": [
+        {
+          "type": "ValidationTextBox",
+          "name": "GeminiApiKey",
+          "caption": "Gemini API-Schlüssel"
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
       "caption": "Pumpen (HmIP-RGBW)",
       "items": [
         {
@@ -281,9 +292,9 @@
       "caption": "Modul aktiv"
     },
     {
-      "code": 104,
+      "code": 204,
       "icon": "inactive",
-      "caption": "Modul inaktiv"
+      "caption": "API-Schlüssel fehlt"
     },
     {
       "code": 201,

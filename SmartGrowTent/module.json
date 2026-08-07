@@ -7,9 +7,7 @@
         "Smart Grow Tent",
         "SmartGrowTent"
     ],
-    "parentRequirements": [
-        "{4C8B2A6D-9E3F-4A7B-8C5D-1F6E2A3B7C4D}"
-    ],
+    "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],
     "prefix": "SGT",

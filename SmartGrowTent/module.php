@@ -62,6 +62,7 @@ class SmartGrowTent extends IPSModuleStrict
         $this->RegisterPropertyBoolean('FlushPhase', false);
         
         $this->RegisterPropertyInteger('AutomationInterval', 30);
+        $this->RegisterPropertyString('GeminiApiKey', '');
 
         // Variablen Registrierung
         $this->RegisterVariableFloat('VPD', 'Aktueller VPD', [
@@ -106,8 +107,9 @@ class SmartGrowTent extends IPSModuleStrict
         $this->DA_ApplyPresentation();
 
         // Validierung der Konfiguration
-        if (!$this->HasActiveParent()) {
-            $this->SetStatus(104); // Kein Parent verbunden
+        $apiKey = $this->ReadPropertyString('GeminiApiKey');
+        if (empty($apiKey)) {
+            $this->SetStatus(204); // API Key fehlt
             return;
         }
 
@@ -402,28 +404,53 @@ class SmartGrowTent extends IPSModuleStrict
      */
     private function askGemini(string $prompt): ?array
     {
-        if (!$this->HasActiveParent()) {
-            $this->SLogError('Gemini API', 'Kein SmartGeminiIO verbunden');
+        $apiKey = $this->ReadPropertyString('GeminiApiKey');
+        if (empty($apiKey)) {
+            $this->SLogError('Gemini API', 'Kein API-Schlüssel hinterlegt');
             return null;
         }
         
-        $parentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
         
-        // Nutze GIO_Query vom Parent anstelle von curl
-        // schemaJson wird auf 'application/json' gesetzt, da wir direkt JSON fordern
-        $jsonText = GIO_Query($parentID, $prompt, 'Du antwortest ausschließlich im JSON-Format.', 'application/json', 0.2);
-        
+        $data = [
+            'contents' => [
+                ['parts' => [['text' => $prompt]]]
+            ],
+            'generationConfig' => [
+                'responseMimeType' => 'application/json'
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            $this->SLogError('Gemini API Fehler', "HTTP $httpCode: $response");
+            return null;
+        }
+
+        $decoded = json_decode($response, true);
+        $jsonText = $decoded['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
         if (empty($jsonText)) {
             return null;
         }
         
-        $decoded = json_decode($jsonText, true);
+        $result = json_decode($jsonText, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             $this->SLogError('Gemini JSON-Fehler', json_last_error_msg());
             return null;
         }
         
-        return $decoded;
+        return $result;
     }
 
     /**
