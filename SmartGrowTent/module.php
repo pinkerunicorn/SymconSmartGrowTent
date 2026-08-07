@@ -52,8 +52,10 @@ class SmartGrowTent extends IPSModuleStrict
         $this->RegisterPropertyInteger('MinWaterWaitMin', 60);
         $this->RegisterPropertyInteger('MinNutrientWaitMin', 30);
         
-        $this->RegisterPropertyFloat('PumpWaterMLPerSec', 0.75);
-        $this->RegisterPropertyFloat('PumpNutrientMLPerSec', 0.75);
+        $this->RegisterPropertyFloat('PumpWater30SecML', 250.0);
+        $this->RegisterPropertyFloat('PumpNutrient30SecML', 35.0);
+        $this->RegisterPropertyFloat('PumpWaterMLPerSec', 8.33);
+        $this->RegisterPropertyFloat('PumpNutrientMLPerSec', 1.16);
         
         $this->RegisterPropertyString('GrowthPhase', 'vegetative');
         $this->RegisterPropertyInteger('WeekNumber', 1);
@@ -480,6 +482,24 @@ class SmartGrowTent extends IPSModuleStrict
     }
 
     /**
+     * Gibt den Förderstrom einer Pumpe in ml/Sekunde zurück.
+     * Nutzt bevorzugt PumpWater30SecML / PumpNutrient30SecML (geteilt durch 30).
+     */
+    private function getPumpMLPerSec(string $type): float
+    {
+        $prop30 = $type === 'water' ? 'PumpWater30SecML' : 'PumpNutrient30SecML';
+        $propPerSec = $type === 'water' ? 'PumpWaterMLPerSec' : 'PumpNutrientMLPerSec';
+
+        $val30 = $this->ReadPropertyFloat($prop30);
+        if ($val30 > 0) {
+            return round($val30 / 30.0, 3);
+        }
+
+        $valSec = $this->ReadPropertyFloat($propPerSec);
+        return $valSec > 0 ? $valSec : ($type === 'water' ? 8.33 : 1.16);
+    }
+
+    /**
      * Baut den Prompt für Gemini
      */
     private function buildGeminiPrompt(array $sensorData): string
@@ -488,8 +508,8 @@ class SmartGrowTent extends IPSModuleStrict
         $week = $this->ReadPropertyInteger('WeekNumber');
         $flush = $this->ReadPropertyBoolean('FlushPhase') ? 'JA' : 'NEIN';
         
-        $waterPumpML = $this->ReadPropertyFloat('PumpWaterMLPerSec');
-        $nutrientPumpML = $this->ReadPropertyFloat('PumpNutrientMLPerSec');
+        $waterPumpML = $this->getPumpMLPerSec('water');
+        $nutrientPumpML = $this->getPumpMLPerSec('nutrient');
         $maxDailyML = $this->ReadPropertyFloat('MaxNutrientDailyML');
 
         $jsonData = json_encode($sensorData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

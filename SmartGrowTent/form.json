@@ -181,19 +181,21 @@
       "items": [
         {
           "type": "NumberSpinner",
-          "name": "PumpWaterMLPerSec",
-          "caption": "Wasserpumpe ml/Sek",
-          "digits": 2,
-          "minimum": 0.1,
-          "maximum": 5.0
+          "name": "PumpWater30SecML",
+          "caption": "Wasserpumpe: Gemessene Menge in 30 Sek (ml)",
+          "digits": 1,
+          "minimum": 1.0,
+          "maximum": 1500.0,
+          "suffix": " ml"
         },
         {
           "type": "NumberSpinner",
-          "name": "PumpNutrientMLPerSec",
-          "caption": "Düngerpumpe ml/Sek",
-          "digits": 2,
-          "minimum": 0.1,
-          "maximum": 5.0
+          "name": "PumpNutrient30SecML",
+          "caption": "Düngerpumpe: Gemessene Menge in 30 Sek (ml)",
+          "digits": 1,
+          "minimum": 1.0,
+          "maximum": 500.0,
+          "suffix": " ml"
         }
       ]
     },
