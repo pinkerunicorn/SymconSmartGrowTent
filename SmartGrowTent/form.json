@@ -263,13 +263,13 @@
     },
     {
       "type": "Button",
-      "caption": "Kalibrierung Wasserpumpe (10 Sek)",
-      "onClick": "SGT_CalibratePump($id, 'water', 10);"
+      "caption": "Kalibrierung Wasserpumpe (30 Sek)",
+      "onClick": "SGT_CalibratePump($id, 'water', 30);"
     },
     {
       "type": "Button",
-      "caption": "Kalibrierung Düngerpumpe (10 Sek)",
-      "onClick": "SGT_CalibratePump($id, 'nutrient', 10);"
+      "caption": "Kalibrierung Düngerpumpe (30 Sek)",
+      "onClick": "SGT_CalibratePump($id, 'nutrient', 30);"
     }
   ],
   "status": [
