@@ -70,7 +70,7 @@ class SmartGrowTent extends IPSModuleStrict
         ], 10);
         $this->RegisterVariableString('Health', 'Gesundheitsstatus', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Leaf',
+            'ICON'         => 'leaf',
         ], 20);
         $this->RegisterVariableFloat('DailyNutrientML', 'Tages-Dünger (ml)', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
@@ -83,11 +83,11 @@ class SmartGrowTent extends IPSModuleStrict
         ], 50);
         $this->RegisterVariableString('LastGeminiResponse', 'Letzte KI-Antwort', [
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
-            'ICON'         => 'Robot',
+            'ICON'         => 'robot',
         ], 60);
         $this->RegisterVariableBoolean('SystemActive', 'System aktiv', [
             'PRESENTATION' => VARIABLE_PRESENTATION_SWITCH,
-            'ICON'         => 'Power',
+            'ICON'         => 'power-off',
         ], 70);
         
         // RequestAction für SystemActive erlauben
