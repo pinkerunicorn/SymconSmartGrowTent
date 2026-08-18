@@ -100,6 +100,14 @@ class SmartGrowTent extends IPSModuleStrict
         $this->RegisterTimer('PumpWaterOff', 0, 'SGT_StopWaterPump($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpNutrientOff', 0, 'SGT_StopNutrientPump($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpCalibrationOff', 0, 'SGT_StopCalibration($_IPS["TARGET"]);');
+
+        $this->DR_Register('DevicesGenericSensor');
+    }
+
+    public function Destroy(): void
+    {
+        parent::Destroy();
+        $this->DR_Unregister();
     }
 
     public function ApplyChanges(): void
@@ -107,7 +115,6 @@ class SmartGrowTent extends IPSModuleStrict
         parent::ApplyChanges();
         
         $this->DA_ApplyPresentation();
-        $this->DR_Register('DevicesGenericSensor');
 
         // Validierung der Konfiguration
         $apiKey = $this->ReadPropertyString('GeminiApiKey');
