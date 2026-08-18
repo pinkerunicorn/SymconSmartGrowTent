@@ -100,8 +100,6 @@ class SmartGrowTent extends IPSModuleStrict
         $this->RegisterTimer('PumpWaterOff', 0, 'SGT_StopWaterPump($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpNutrientOff', 0, 'SGT_StopNutrientPump($_IPS[\'TARGET\']);');
         $this->RegisterTimer('PumpCalibrationOff', 0, 'SGT_StopCalibration($_IPS["TARGET"]);');
-
-        $this->DR_Register('DevicesGenericSensor');
     }
 
     public function Destroy(): void
@@ -121,6 +119,7 @@ class SmartGrowTent extends IPSModuleStrict
         if (empty($apiKey)) {
             $this->SetStatus(204); // API Key fehlt
             return;
+        $this->DR_Register('DevicesGenericSensor');
         }
 
         $waterPump = $this->ReadPropertyInteger('PumpWaterID');
