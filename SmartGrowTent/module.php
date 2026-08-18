@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
 require_once __DIR__ . '/../libs/Trait_DeviceAvailability.php';
+require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
 
 /**
  * SmartGrowTent - IP-Symcon 9 Modul zur Automatisierung eines Cannabis Grow-Zelts.
@@ -13,6 +14,7 @@ require_once __DIR__ . '/../libs/Trait_DeviceAvailability.php';
  */
 class SmartGrowTent extends IPSModuleStrict
 {
+    use DeviceRegistration_Trait;
     use SmartLog_Trait;
     use DeviceAvailability_Trait;
 
@@ -142,6 +144,10 @@ class SmartGrowTent extends IPSModuleStrict
         } else {
             $this->SetTimerInterval('AutomationCycle', 0);
         }
+    
+        $this->DR_Register('DevicesGenericSensor', [
+            'Reachable_VarID' => $this->GetIDForIdent('DeviceAvailable'),
+        ]);
     }
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
