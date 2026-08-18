@@ -107,6 +107,7 @@ class SmartGrowTent extends IPSModuleStrict
         parent::ApplyChanges();
         
         $this->DA_ApplyPresentation();
+        $this->DR_Register('DevicesGenericSensor');
 
         // Validierung der Konfiguration
         $apiKey = $this->ReadPropertyString('GeminiApiKey');
@@ -145,9 +146,6 @@ class SmartGrowTent extends IPSModuleStrict
             $this->SetTimerInterval('AutomationCycle', 0);
         }
     
-        $this->DR_Register('DevicesGenericSensor', [
-            'Reachable_VarID' => $this->GetIDForIdent('DeviceAvailable'),
-        ]);
     }
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
