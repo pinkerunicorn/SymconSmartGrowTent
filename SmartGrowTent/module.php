@@ -68,6 +68,7 @@ class SmartGrowTent extends IPSModuleStrict
 
         // Variablen Registrierung
         $this->RegisterVariableFloat('VPD', 'Aktueller VPD', [
+            'ICON' => 'chart-line',
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
         ], 10);
         $this->RegisterVariableString('Health', 'Gesundheitsstatus', [
@@ -75,12 +76,15 @@ class SmartGrowTent extends IPSModuleStrict
             'ICON'         => 'leaf',
         ], 20);
         $this->RegisterVariableFloat('DailyNutrientML', 'Tages-Dünger (ml)', [
+            'ICON' => 'flask',
             'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
         ], 30);
         $this->RegisterVariableInteger('LastWatering', 'Letzte Bewässerung', [
+            'ICON' => 'clock',
             'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME,
         ], 40);
         $this->RegisterVariableInteger('LastNutrient', 'Letzte Düngung', [
+            'ICON' => 'clock',
             'PRESENTATION' => VARIABLE_PRESENTATION_DATE_TIME,
         ], 50);
         $this->RegisterVariableString('LastGeminiResponse', 'Letzte KI-Antwort', [
