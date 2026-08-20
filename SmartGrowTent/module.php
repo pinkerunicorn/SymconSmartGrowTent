@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../libs/Trait_SmartLog.php';
 require_once __DIR__ . '/../libs/Trait_DeviceAvailability.php';
-require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
-
 /**
  * SmartGrowTent - IP-Symcon 9 Modul zur Automatisierung eines Cannabis Grow-Zelts.
  * 
@@ -14,7 +12,6 @@ require_once __DIR__ . '/../libs/Trait_DeviceRegistration.php';
  */
 class SmartGrowTent extends IPSModuleStrict
 {
-    use DeviceRegistration_Trait;
     use SmartLog_Trait;
     use DeviceAvailability_Trait;
 
@@ -109,8 +106,7 @@ class SmartGrowTent extends IPSModuleStrict
     public function Destroy(): void
     {
         parent::Destroy();
-        $this->DR_Unregister();
-    }
+        }
 
     public function ApplyChanges(): void
     {
@@ -123,7 +119,6 @@ class SmartGrowTent extends IPSModuleStrict
         if (empty($apiKey)) {
             $this->SetStatus(204); // API Key fehlt
             return;
-        $this->DR_Register('DevicesGenericSensor');
         }
 
         $waterPump = $this->ReadPropertyInteger('PumpWaterID');
